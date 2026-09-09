@@ -1,13 +1,20 @@
 import React from 'react';
-import { Box, Typography, Avatar, IconButton, InputBase, Paper, Stack } from '@mui/material';
-import { Search as SearchIcon, DarkMode as DarkModeIcon, Star as StarIcon } from '@mui/icons-material';
+import { Box, Typography, Avatar, IconButton, InputBase, Paper, Stack, Button, Tooltip } from '@mui/material';
+import { Search as SearchIcon, DarkMode as DarkModeIcon, Star as StarIcon, Logout as LogoutIcon, Person as PersonIcon } from '@mui/icons-material';
+import { useAuth } from '../context/AuthContext';
 
-function Navbar() {
+function Navbar({ onNavigate }) {
+  const { user, logout } = useAuth();
+
   return (
     <Box sx={{ pb: 2 }}>
       {/* Top Header Row */}
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: -0.5, color: '#eef0f4' }}>
+        <Typography
+          variant="h5"
+          onClick={() => onNavigate && onNavigate('feed')}
+          sx={{ fontWeight: 800, letterSpacing: -0.5, color: '#eef0f4', cursor: 'pointer' }}
+        >
           Social
         </Typography>
 
@@ -49,17 +56,44 @@ function Navbar() {
             </Typography>
           </Paper>
 
-          {/* Dark Mode Moon Icon */}
+          {/* Dark Mode Icon */}
           <IconButton size="small" sx={{ color: '#f2b705' }}>
             <DarkModeIcon fontSize="small" />
           </IconButton>
 
-          {/* Profile Avatar */}
-          <Avatar
-            alt="User Profile"
-            src="https://i.pravatar.cc/150?img=12"
-            sx={{ width: 38, height: 38, border: '2px solid #f2b705' }}
-          />
+          {/* Auth Action Buttons / User Profile */}
+          {user ? (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Avatar
+                alt={user.name}
+                src={user.avatar || 'https://i.pravatar.cc/150?img=12'}
+                sx={{ width: 38, height: 38, border: '2px solid #f2b705', cursor: 'pointer' }}
+              />
+              <Tooltip title="Sign Out">
+                <IconButton size="small" onClick={logout} sx={{ color: '#9096a8' }}>
+                  <LogoutIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          ) : (
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => onNavigate && onNavigate('login')}
+                sx={{
+                  py: 0.3,
+                  px: 1.8,
+                  fontSize: '0.8rem',
+                  borderColor: '#262936',
+                  color: '#eef0f4',
+                  '&:hover': { borderColor: '#f2b705', color: '#f2b705' },
+                }}
+              >
+                Sign In
+              </Button>
+            </Stack>
+          )}
         </Stack>
       </Stack>
 

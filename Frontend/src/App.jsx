@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { ThemeProvider, CssBaseline, Container, Box, Fab } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import theme from './theme/theme';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import CreatePostCard from './components/CreatePostCard';
 import FilterTabs from './components/FilterTabs';
 import PostCard from './components/PostCard';
 import BottomNav from './components/BottomNav';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
-// Sample feed posts matching TaskPlanet UI reference
+// Initial sample feed posts
 const INITIAL_POSTS = [
   {
     id: 1,
@@ -62,16 +64,18 @@ const INITIAL_POSTS = [
 ];
 
 function AppContent() {
+  const { user } = useAuth();
+  const [currentPage, setCurrentPage] = useState('feed'); // 'feed' | 'login' | 'register'
   const [posts, setPosts] = useState(INITIAL_POSTS);
   const [activeFilter, setActiveFilter] = useState('All Post');
 
   const handleAddPost = (newContent) => {
     const newPostObj = {
       id: Date.now(),
-      author: 'You (Logged User)',
-      username: '@my_profile',
+      author: user ? user.name : 'You (Logged User)',
+      username: user ? `@${user.name.toLowerCase().replace(/\s+/g, '')}` : '@my_profile',
       userBadge: '1 🥉 Member',
-      avatar: 'https://i.pravatar.cc/150?img=12',
+      avatar: user?.avatar || 'https://i.pravatar.cc/150?img=12',
       time: 'Just now',
       categoryTag: 'Community Post',
       title: 'New Social Post',
@@ -89,41 +93,51 @@ function AppContent() {
     <Box sx={{ minHeight: '100vh', backgroundColor: '#0f1117', pb: 10 }}>
       <Container maxWidth="sm" sx={{ pt: 1, px: 2 }}>
         {/* Top Header Navigation */}
-        <Navbar />
+        <Navbar onNavigate={setCurrentPage} />
 
-        {/* Create Post Input Card */}
-        <CreatePostCard onAddPost={handleAddPost} />
+        {/* Dynamic Page Views */}
+        {currentPage === 'login' && <Login onNavigate={setCurrentPage} />}
+        {currentPage === 'register' && <Register onNavigate={setCurrentPage} />}
 
-        {/* Filter Navigation Tabs */}
-        <FilterTabs activeFilter={activeFilter} onSelectFilter={setActiveFilter} />
+        {currentPage === 'feed' && (
+          <>
+            {/* Create Post Input Card */}
+            <CreatePostCard onAddPost={handleAddPost} />
 
-        {/* Feed Posts */}
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+            {/* Filter Navigation Tabs */}
+            <FilterTabs activeFilter={activeFilter} onSelectFilter={setActiveFilter} />
+
+            {/* Feed Posts */}
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </>
+        )}
       </Container>
 
-      {/* Floating Action Button (+) with Warm Gold Accent */}
-      <Fab
-        aria-label="add post"
-        sx={{
-          position: 'fixed',
-          bottom: 76,
-          right: 20,
-          backgroundColor: '#0f1117',
-          border: '2px solid #f2b705',
-          color: '#f2b705',
-          boxShadow: '0 0 15px rgba(242, 183, 5, 0.4)',
-          '&:hover': {
-            backgroundColor: '#f2b705',
-            color: '#0f1117',
-          },
-        }}
-      >
-        <AddIcon />
-      </Fab>
+      {/* Floating Action Button (+) */}
+      {currentPage === 'feed' && (
+        <Fab
+          aria-label="add post"
+          sx={{
+            position: 'fixed',
+            bottom: 76,
+            right: 20,
+            backgroundColor: '#0f1117',
+            border: '2px solid #f2b705',
+            color: '#f2b705',
+            boxShadow: '0 0 15px rgba(242, 183, 5, 0.4)',
+            '&:hover': {
+              backgroundColor: '#f2b705',
+              color: '#0f1117',
+            },
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      )}
 
-      {/* Bottom TaskPlanet Navigation Bar */}
+      {/* Bottom Navigation Bar */}
       <BottomNav />
     </Box>
   );
