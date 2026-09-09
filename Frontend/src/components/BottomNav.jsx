@@ -2,8 +2,15 @@ import React, { useState } from 'react';
 import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
 import { HomeOutlined as HomeIcon, AssignmentOutlined as TasksIcon, PublicOutlined as SocialIcon, EmojiEventsOutlined as LeaderboardIcon, ChatBubbleOutlineOutlined as ChatIcon } from '@mui/icons-material';
 
-function BottomNav() {
+function BottomNav({ onNavigate }) {
   const [value, setValue] = useState(2); // Default 'Social' tab active
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+    if (newValue === 2 && onNavigate) {
+      onNavigate('feed');
+    }
+  };
 
   return (
     <Paper
@@ -21,9 +28,7 @@ function BottomNav() {
       <BottomNavigation
         showLabels
         value={value}
-        onChange={(event, newValue) => {
-          setValue(newValue);
-        }}
+        onChange={handleChange}
         sx={{
           backgroundColor: '#0f1117',
           height: 64,

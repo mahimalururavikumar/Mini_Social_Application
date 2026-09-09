@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ThemeProvider, CssBaseline, Container, Box, Fab } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { ThemeProvider, CssBaseline, Container, Box, Fab, CircularProgress, Alert } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import theme from './theme/theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -10,11 +10,13 @@ import PostCard from './components/PostCard';
 import BottomNav from './components/BottomNav';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Profile from './pages/Profile';
+import { fetchPosts, createPostApi } from './services/api';
 
-// Initial sample feed posts
-const INITIAL_POSTS = [
+// Fallback posts if backend database is offline or empty
+const FALLBACK_POSTS = [
   {
-    id: 1,
+    id: 'sample-1',
     author: 'Nitin Pa...',
     username: '@nitin3w',
     userBadge: '7 👑 Legend',
@@ -30,7 +32,7 @@ const INITIAL_POSTS = [
     sharesCount: 14,
   },
   {
-    id: 2,
+    id: 'sample-2',
     author: 'Hira Kals...',
     username: '@hashiimov8',
     userBadge: '1 🥉 Bronze',
@@ -45,49 +47,77 @@ const INITIAL_POSTS = [
     commentsCount: 1,
     sharesCount: 0,
   },
-  {
-    id: 3,
-    author: 'Sajjad Muc...',
-    username: '@sajjad_gold',
-    userBadge: '3 🥇 Gold',
-    avatar: 'https://i.pravatar.cc/150?img=11',
-    time: '2 hours ago',
-    categoryTag: 'Refer And Earn',
-    title: 'Daily Task Completion Tip 💡',
-    content: 'Always keep your proof screenshots clear before submitting tasks to speed up point validation.',
-    image: '',
-    isPinned: false,
-    likesCount: 45,
-    commentsCount: 12,
-    sharesCount: 5,
-  },
 ];
 
 function AppContent() {
   const { user } = useAuth();
-  const [currentPage, setCurrentPage] = useState('feed'); // 'feed' | 'login' | 'register'
-  const [posts, setPosts] = useState(INITIAL_POSTS);
+  const [currentPage, setCurrentPage] = useState('feed'); // 'feed' | 'login' | 'register' | 'profile'
+  const [posts, setPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All Post');
+  const [apiError, setApiError] = useState('');
 
-  const handleAddPost = (newContent) => {
-    const newPostObj = {
-      id: Date.now(),
-      author: user ? user.name : 'You (Logged User)',
-      username: user ? `@${user.name.toLowerCase().replace(/\s+/g, '')}` : '@my_profile',
-      userBadge: '1 🥉 Member',
-      avatar: user?.avatar || 'https://i.pravatar.cc/150?img=12',
-      time: 'Just now',
-      categoryTag: 'Community Post',
-      title: 'New Social Post',
-      content: newContent,
-      image: '',
-      isPinned: false,
-      likesCount: 0,
-      commentsCount: 0,
-      sharesCount: 0,
-    };
-    setPosts([newPostObj, ...posts]);
+  // Fetch live feed posts from Backend on mount
+  const loadFeed = async () => {
+    setLoadingPosts(true);
+    const res = await fetchPosts();
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      setPosts(res.data);
+      setApiError('');
+    } else {
+      setPosts(FALLBACK_POSTS);
+      if (!res.success) {
+        setApiError('Backend server offline. Showing preview sample feed.');
+      }
+    }
+    setLoadingPosts(false);
   };
+
+  useEffect(() => {
+    loadFeed();
+  }, []);
+
+  // Handler for adding a new post
+  const handleAddPost = async (formData) => {
+    if (user) {
+      const res = await createPostApi(formData);
+      if (res.success) {
+        setPosts([res.data, ...posts]);
+        return { success: true };
+      } else {
+        return { success: false, error: res.error };
+      }
+    } else {
+      const textContent = formData.get('text') || '';
+      const newPostObj = {
+        id: Date.now().toString(),
+        author: 'Guest User',
+        username: '@guest',
+        userBadge: '1 🥉 Member',
+        avatar: 'https://i.pravatar.cc/150?img=12',
+        time: 'Just now',
+        categoryTag: 'Community Post',
+        content: textContent,
+        image: '',
+        isPinned: false,
+        likesCount: 0,
+        commentsCount: 0,
+      };
+      setPosts([newPostObj, ...posts]);
+      return { success: true };
+    }
+  };
+
+  const handleDeleteSuccess = (deletedId) => {
+    setPosts(posts.filter((p) => (p._id || p.id) !== deletedId));
+  };
+
+  // Filter posts created by logged-in user
+  const userPosts = posts.filter((p) => {
+    if (!user) return false;
+    const authorId = p.user?._id || p.user;
+    return authorId === user._id || authorId === user.id;
+  });
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#0f1117', pb: 10 }}>
@@ -98,19 +128,32 @@ function AppContent() {
         {/* Dynamic Page Views */}
         {currentPage === 'login' && <Login onNavigate={setCurrentPage} />}
         {currentPage === 'register' && <Register onNavigate={setCurrentPage} />}
+        {currentPage === 'profile' && <Profile onNavigate={setCurrentPage} userPosts={userPosts} />}
 
         {currentPage === 'feed' && (
           <>
+            {apiError && (
+              <Alert severity="info" sx={{ mb: 2, backgroundColor: 'rgba(242, 183, 5, 0.1)', color: '#f2b705', border: '1px solid rgba(242, 183, 5, 0.3)' }}>
+                {apiError}
+              </Alert>
+            )}
+
             {/* Create Post Input Card */}
             <CreatePostCard onAddPost={handleAddPost} />
 
             {/* Filter Navigation Tabs */}
             <FilterTabs activeFilter={activeFilter} onSelectFilter={setActiveFilter} />
 
-            {/* Feed Posts */}
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+            {/* Loading Indicator */}
+            {loadingPosts ? (
+              <Box textAlign="center" py={4}>
+                <CircularProgress sx={{ color: '#f2b705' }} />
+              </Box>
+            ) : (
+              posts.map((post) => (
+                <PostCard key={post._id || post.id} post={post} onDeleteSuccess={handleDeleteSuccess} />
+              ))
+            )}
           </>
         )}
       </Container>
@@ -137,8 +180,8 @@ function AppContent() {
         </Fab>
       )}
 
-      {/* Bottom Navigation Bar */}
-      <BottomNav />
+      {/* Bottom TaskPlanet Navigation Bar */}
+      <BottomNav onNavigate={setCurrentPage} />
     </Box>
   );
 }

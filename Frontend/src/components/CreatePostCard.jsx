@@ -1,18 +1,54 @@
 import React, { useState } from 'react';
-import { Card, CardContent, Box, Typography, Button, TextField, Stack, IconButton, Chip } from '@mui/material';
-import { PhotoCamera as PhotoCameraIcon, InsertEmoticon as EmojiIcon, FormatListBulleted as ListIcon, Campaign as PromoteIcon, Send as SendIcon } from '@mui/icons-material';
+import { Card, CardContent, Box, Typography, Button, TextField, Stack, IconButton, Chip, CircularProgress, Alert } from '@mui/material';
+import { PhotoCamera as PhotoCameraIcon, InsertEmoticon as EmojiIcon, FormatListBulleted as ListIcon, Campaign as PromoteIcon, Send as SendIcon, Close as CloseIcon } from '@mui/icons-material';
+import { useAuth } from '../context/AuthContext';
 
 function CreatePostCard({ onAddPost }) {
+  const { user } = useAuth();
   const [content, setContent] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!content.trim()) return;
-    if (onAddPost) {
-      onAddPost(content);
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
-    setContent('');
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!content.trim() && !imageFile) return;
+
+    setSubmitting(true);
+    setErrorMsg('');
+
+    const formData = new FormData();
+    formData.append('text', content.trim());
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
+    if (onAddPost) {
+      const res = await onAddPost(formData);
+      if (res && !res.success) {
+        setErrorMsg(res.error || 'Failed to submit post');
+      } else {
+        setContent('');
+        handleRemoveImage();
+      }
+    }
+
+    setSubmitting(false);
   };
 
   return (
@@ -35,9 +71,6 @@ function CreatePostCard({ onAddPost }) {
                 backgroundColor: activeTab === 'all' ? '#f2b705' : 'transparent',
                 color: activeTab === 'all' ? '#0f1117' : '#9096a8',
                 borderColor: activeTab === 'all' ? '#f2b705' : '#262936',
-                '&:hover': {
-                  backgroundColor: activeTab === 'all' ? '#d97706' : 'rgba(242, 183, 5, 0.1)',
-                },
               }}
             >
               All Posts
@@ -60,9 +93,15 @@ function CreatePostCard({ onAddPost }) {
           </Stack>
         </Stack>
 
+        {errorMsg && (
+          <Alert severity="error" sx={{ mb: 2, backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
+            {errorMsg}
+          </Alert>
+        )}
+
         {/* Text Area */}
         <TextField
-          placeholder="What's on your mind?"
+          placeholder={user ? `What's on your mind, ${user.name}?` : "What's on your mind? (Sign in to post)"}
           multiline
           rows={3}
           fullWidth
@@ -75,16 +114,43 @@ function CreatePostCard({ onAddPost }) {
               style: { color: '#eef0f4', fontSize: '0.95rem' },
             },
           }}
-          sx={{ mb: 2 }}
+          sx={{ mb: 1 }}
         />
+
+        {/* Image Preview Thumbnail */}
+        {imagePreview && (
+          <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
+            <Box
+              component="img"
+              src={imagePreview}
+              alt="Upload preview"
+              sx={{ maxHeight: 180, borderRadius: 2, border: '1px solid #262936' }}
+            />
+            <IconButton
+              size="small"
+              onClick={handleRemoveImage}
+              sx={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                backgroundColor: 'rgba(15, 17, 23, 0.8)',
+                color: '#ef4444',
+                '&:hover': { backgroundColor: '#ef4444', color: '#fff' },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        )}
 
         <Box sx={{ height: '1px', backgroundColor: '#262936', mb: 2 }} />
 
         {/* Bottom Actions Bar */}
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-            <IconButton size="small" sx={{ color: '#f2b705' }}>
+            <IconButton size="small" component="label" sx={{ color: '#f2b705' }}>
               <PhotoCameraIcon fontSize="small" />
+              <input type="file" accept="image/*" hidden onChange={handleImageChange} />
             </IconButton>
             <IconButton size="small" sx={{ color: '#f2b705' }}>
               <EmojiIcon fontSize="small" />
@@ -105,8 +171,8 @@ function CreatePostCard({ onAddPost }) {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={!content.trim()}
-            endIcon={<SendIcon fontSize="small" />}
+            disabled={submitting || (!content.trim() && !imageFile)}
+            endIcon={submitting ? <CircularProgress size={16} sx={{ color: '#0f1117' }} /> : <SendIcon fontSize="small" />}
             sx={{
               px: 3,
               borderRadius: 24,

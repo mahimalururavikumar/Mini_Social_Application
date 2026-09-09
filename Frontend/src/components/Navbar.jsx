@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Avatar, IconButton, InputBase, Paper, Stack, Button, Tooltip } from '@mui/material';
-import { Search as SearchIcon, DarkMode as DarkModeIcon, Star as StarIcon, Logout as LogoutIcon, Person as PersonIcon } from '@mui/icons-material';
+import { Search as SearchIcon, DarkMode as DarkModeIcon, Star as StarIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
 function Navbar({ onNavigate }) {
@@ -67,6 +67,7 @@ function Navbar({ onNavigate }) {
               <Avatar
                 alt={user.name}
                 src={user.avatar || 'https://i.pravatar.cc/150?img=12'}
+                onClick={() => onNavigate && onNavigate('profile')}
                 sx={{ width: 38, height: 38, border: '2px solid #f2b705', cursor: 'pointer' }}
               />
               <Tooltip title="Sign Out">
