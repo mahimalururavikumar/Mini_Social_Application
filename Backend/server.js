@@ -3,6 +3,9 @@ import connectDB from './config/db.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
+
+import authRoutes from './routes/auth.routes.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -20,5 +23,6 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", message: "Social app API is running" });
 });
 
+app.use("/auth", authRoutes);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

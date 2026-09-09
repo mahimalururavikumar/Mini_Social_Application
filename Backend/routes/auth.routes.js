@@ -1,11 +1,16 @@
-import {Register, Login, getUserProfile} from "../controllers/auth.controller.js";
 import express from "express";
-import { getUserProfile } from './../controller/auth.controller';
+import { registerUser, loginUser, getUserProfile, updateUserProfile } from "../controllers/auth.controller.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-router.post("/register", Register);
-router.post("/login", Login);
-router.get("/profile", getUserProfile);
+// Public routes
+router.post("/register", upload.single("avatar"), registerUser);
+router.post("/login", loginUser);
+
+// Protected user profile routes
+router.get("/profile", authMiddleware, getUserProfile);
+router.put("/profile", authMiddleware, upload.single("avatar"), updateUserProfile);
 
 export default router;
