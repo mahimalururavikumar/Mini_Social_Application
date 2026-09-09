@@ -1,16 +1,55 @@
-# React + Vite
+# Social app - frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React (Vite) + MUI (app shell/auth) + React Bootstrap (feed) client for the mini social post app.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+cp .env.example .env   # set VITE_API_URL to your backend
+npm run dev             # http://localhost:5173
+```
 
-## React Compiler
+## Assumptions about the backend contract
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Built against these endpoints - adjust `src/api/axios.js` calls if your backend differs:
 
-## Expanding the Oxlint configuration
+| Action | Request | Expected response |
+|---|---|---|
+| Register | `POST /auth/register` (JSON or multipart with `avatar`) | `{ token, user }` |
+| Login | `POST /auth/login` `{ email, password }` | `{ token, user }` |
+| Get profile | `GET /auth/profile` | `{ user }` |
+| Update profile | `PUT /auth/profile` (JSON or multipart) | `{ user }` |
+| Feed | `GET /posts?cursor=` | `{ posts, nextCursor, hasMore }` **or** a plain array (both are handled - see `normalizeFeedResponse` in `pages/Feed.jsx`) |
+| Create post | `POST /posts` (multipart: `text?`, `image?`) | `{ post }` |
+| Like/unlike | `POST /posts/:id/like` | `{ likes: [...usernames] }` |
+| Comment | `POST /posts/:id/comment` `{ text }` | `{ comments: [...] }` |
+| Delete post | `DELETE /posts/:id` | 200 on success |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Each post object is expected to look like:
+```json
+{
+  "_id": "...",
+  "username": "jane",
+  "user": "<userId>",
+  "text": "...",
+  "imageUrl": "...",
+  "likes": ["jane", "bob"],
+  "comments": [{ "_id": "...", "username": "bob", "text": "...", "createdAt": "..." }],
+  "createdAt": "..."
+}
+```
+
+If any field name differs on your actual backend, the two places to adjust are `PostCard.jsx` (rendering) and `CreatePost.jsx` / `Feed.jsx` (requests).
+
+## Design
+
+- Dark theme inspired by the TaskPlanet social page reference: near-black background, warm gold accent for primary actions.
+- Poppins for names/headings, Inter for body text.
+- MUI powers the top bar and auth/profile forms; React Bootstrap powers the composer, post cards, and comments.
+
+## Deploying to Vercel / Netlify
+
+1. Push this folder to GitHub as `frontend/`.
+2. Import into Vercel/Netlify, root directory `frontend`, build command `npm run build`, output directory `dist`.
+3. Set `VITE_API_URL` to your deployed Render backend URL in the project's environment variables.

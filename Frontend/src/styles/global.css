@@ -1,0 +1,151 @@
+:root {
+  --bg: #0f1117;
+  --surface: #171922;
+  --surface-hover: #1d202b;
+  --border: #262936;
+  --text-primary: #eef0f4;
+  --text-secondary: #9096a8;
+  --accent: #f2b705;
+  --accent-hover: #d9a404;
+  --like: #ef4444;
+  --danger: #e5484d;
+  --font-display: "Poppins", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  /* Bootstrap 5 dark theme CSS variable overrides */
+  --bs-body-bg: #0f1117;
+  --bs-body-color: #eef0f4;
+  --bs-card-bg: #171922;
+  --bs-card-color: #eef0f4;
+  --bs-card-border-color: #262936;
+  --bs-tertiary-bg: #1d202b;
+  --bs-secondary-color: #9096a8;
+  --bs-emphasis-color: #eef0f4;
+  --bs-secondary-bg: #1d202b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .app-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--accent-hover);
+}
+
+.page-shell {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+/* Ensure Bootstrap cards inherit dark surface background and light text */
+.card, .card-surface {
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+}
+
+.card-body {
+  color: var(--text-primary) !important;
+}
+
+/* Form controls (inputs, textareas) */
+.form-control, .form-select {
+  background-color: var(--surface-hover) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.form-control:focus, .form-select:focus {
+  background-color: var(--surface-hover) !important;
+  border-color: var(--accent) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 0 0 0.25rem rgba(242, 183, 5, 0.25) !important;
+}
+
+.form-control::placeholder, textarea::placeholder, input::placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 0.85 !important;
+}
+
+/* Secondary text */
+.text-secondary, .text-muted {
+  color: var(--text-secondary) !important;
+}
+
+.btn-accent {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #14150f !important;
+  font-weight: 600;
+}
+.btn-accent:hover {
+  background-color: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}
+
+.btn-ghost {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+.btn-ghost:hover {
+  background: var(--surface-hover) !important;
+}
+
+.like-btn {
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.like-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.like-btn.liked {
+  color: var(--like);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+

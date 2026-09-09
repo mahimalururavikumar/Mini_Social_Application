@@ -1,302 +1,143 @@
-import React, { useState } from 'react';
-import { Card, CardContent, Box, Typography, Avatar, Button, Stack, IconButton, Chip, TextField, InputAdornment, Collapse } from '@mui/material';
-import { FavoriteBorder as HeartOutlineIcon, Favorite as HeartFilledIcon, ChatBubbleOutlineOutlined as CommentIcon, Share as ShareIcon, MoreHoriz as MoreIcon, PushPin as PinIcon, EmojiEvents as TrophyIcon, Send as SendIcon, DeleteOutlined as DeleteIcon } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
-import { toggleLikeApi, addCommentApi, deletePostApi } from '../services/api';
+import { useState } from "react";
+import Card from "react-bootstrap/Card";
+import Image from "react-bootstrap/Image";
+import Dropdown from "react-bootstrap/Dropdown";
+import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
+import CommentSection from "./CommentSection";
+import { timeAgo } from "../utils/time";
 
-function PostCard({ post, onDeleteSuccess }) {
+export default function PostCard({ post, onPostDeleted }) {
   const { user } = useAuth();
-  const {
-    _id,
-    id,
-    user: authorObj,
-    username: fallbackUsername = '@nitin3w',
-    text = '',
-    content: fallbackContent = '',
-    imageUrl = '',
-    image: fallbackImage = '',
-    likes: initialLikes = [],
-    likesCount: fallbackLikesCount = 0,
-    comments: initialComments = [],
-    commentsCount: fallbackCommentsCount = 0,
-    createdAt,
-    time: fallbackTime = 'Aug 30',
-    isPinned = false,
-    userBadge = '1 🥉 Member',
-    categoryTag = 'Community Post',
-  } = post || {};
+  const [likes, setLikes] = useState(post.likes || []);
+  const [comments, setComments] = useState(post.comments || []);
+  const [showComments, setShowComments] = useState(false);
+  const [liking, setLiking] = useState(false);
 
-  const postId = _id || id;
-  const authorName = authorObj?.username || post?.author || 'Community Member';
-  const avatarUrl = authorObj?.avatarUrl || post?.avatar || 'https://i.pravatar.cc/150?img=33';
-  const displayContent = text || fallbackContent;
-  const displayImage = imageUrl || fallbackImage;
-
-  // Check if current user liked this post
-  const currentUserId = user?._id || user?.id;
-  const isLikedByMe = Array.isArray(initialLikes) && initialLikes.some(
-    (l) => (typeof l === 'string' ? l === currentUserId : l?.user === currentUserId || l?.user?._id === currentUserId)
+  const isLiked = Boolean(
+    user &&
+      likes.some((l) =>
+        typeof l === "string"
+          ? l === user.username
+          : l.username === user.username || (user.id && (l.user === user.id || l.user?._id === user.id))
+      )
   );
 
-  const [liked, setLiked] = useState(isLikedByMe);
-  const [likesCount, setLikesCount] = useState(Array.isArray(initialLikes) ? initialLikes.length : fallbackLikesCount);
-  const [comments, setComments] = useState(Array.isArray(initialComments) ? initialComments : []);
-  const [showComments, setShowComments] = useState(false);
-  const [newComment, setNewComment] = useState('');
-  const [submittingComment, setSubmittingComment] = useState(false);
-  const [following, setFollowing] = useState(false);
+  const currentUserId = user?.id || user?._id;
+  const postUserId = typeof post.user === "object" ? (post.user?._id || post.user?.id) : post.user;
+  const isOwner = Boolean(user && (postUserId === currentUserId || post.username === user.username));
+  const avatarUrl = post.user?.avatarUrl || post.avatarUrl;
 
-  const isOwner = user && authorObj && (authorObj._id === user._id || authorObj === user._id);
-
-  // Toggle Like Handler
   const handleLike = async () => {
-    // Optimistic UI update
-    if (liked) {
-      setLiked(false);
-      setLikesCount((prev) => Math.max(0, prev - 1));
-    } else {
-      setLiked(true);
-      setLikesCount((prev) => prev + 1);
-    }
-
-    if (postId) {
-      const res = await toggleLikeApi(postId);
-      if (res.success && res.data?.likesCount !== undefined) {
-        setLikesCount(res.data.likesCount);
-      }
+    if (liking || !user) return;
+    const wasLiked = isLiked;
+    const filterUser = (l) => (typeof l === "string" ? l !== user.username : l.username !== user.username);
+    setLikes((prev) =>
+      wasLiked
+        ? prev.filter(filterUser)
+        : [...prev, { user: user.id || user._id, username: user.username }]
+    );
+    try {
+      setLiking(true);
+      const res = await api.post(`/posts/${post._id}/like`);
+      if (res.data.likes) setLikes(res.data.likes);
+    } catch {
+      setLikes((prev) =>
+        wasLiked
+          ? [...prev, { user: user.id || user._id, username: user.username }]
+          : prev.filter(filterUser)
+      );
+    } finally {
+      setLiking(false);
     }
   };
 
-  // Add Comment Handler
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-
-    setSubmittingComment(true);
-    const commentText = newComment.trim();
-
-    if (postId) {
-      const res = await addCommentApi(postId, commentText);
-      if (res.success && res.data?.comments) {
-        setComments(res.data.comments);
-      } else {
-        // Local fallback update
-        setComments([...comments, { username: user?.name || 'You', text: commentText }]);
-      }
-    } else {
-      setComments([...comments, { username: user?.name || 'You', text: commentText }]);
-    }
-
-    setNewComment('');
-    setSubmittingComment(false);
-  };
-
-  // Delete Post Handler
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      if (postId) {
-        await deletePostApi(postId);
-      }
-      if (onDeleteSuccess) {
-        onDeleteSuccess(postId);
-      }
+    if (!window.confirm("Delete this post?")) return;
+    try {
+      await api.delete(`/posts/${post._id}`);
+      onPostDeleted?.(post._id);
+    } catch {
+      // no-op - the post stays visible if deletion failed
     }
   };
 
   return (
-    <Card
-      sx={{
-        mb: 2.5,
-        position: 'relative',
-        backgroundColor: '#171922',
-        border: isPinned ? '1.5px solid #f2b705' : '1px solid #262936',
-        boxShadow: isPinned ? '0 4px 20px rgba(242, 183, 5, 0.12)' : 'none',
-      }}
-    >
-      {/* Pinned Badge */}
-      {isPinned && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: -12,
-            right: 16,
-            backgroundColor: '#ef4444',
-            color: '#ffffff',
-            borderRadius: '50%',
-            p: 0.6,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-            zIndex: 2,
-          }}
-        >
-          <PinIcon sx={{ fontSize: 16 }} />
-        </Box>
-      )}
-
-      <CardContent sx={{ p: 2.5 }}>
-        {/* Author Header */}
-        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-            <Avatar src={avatarUrl} alt={authorName} sx={{ width: 44, height: 44, border: '2px solid #f2b705' }} />
-            <Box>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#eef0f4' }}>
-                  {authorName}
-                </Typography>
-                <Chip
-                  icon={<TrophyIcon style={{ fontSize: 14, color: '#f2b705' }} />}
-                  label={userBadge}
-                  size="small"
-                  sx={{
-                    height: 20,
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    backgroundColor: 'rgba(242, 183, 5, 0.12)',
-                    border: '1px solid rgba(242, 183, 5, 0.3)',
-                    color: '#f2b705',
-                  }}
-                />
-              </Stack>
-              <Typography variant="caption" sx={{ color: '#9096a8', display: 'block' }}>
-                {fallbackUsername} • {createdAt ? new Date(createdAt).toLocaleDateString() : fallbackTime}
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            {!isOwner ? (
-              <Button
-                size="small"
-                variant={following ? 'outlined' : 'contained'}
-                onClick={() => setFollowing(!following)}
-                sx={{
-                  py: 0.4,
-                  px: 2,
-                  fontSize: '0.8rem',
-                  backgroundColor: following ? 'transparent' : '#f2b705',
-                  color: following ? '#9096a8' : '#0f1117',
-                  borderColor: '#262936',
+    <Card className="card-surface mb-3">
+      <Card.Body>
+        <div className="d-flex justify-content-between align-items-start">
+          <div className="d-flex align-items-center gap-2">
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                roundedCircle
+                style={{ width: 38, height: 38, objectFit: "cover" }}
+              />
+            ) : (
+              <div
+                className="d-flex align-items-center justify-content-center"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: "var(--surface-hover)",
+                  color: "var(--accent)",
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 600,
                 }}
               >
-                {following ? 'Following' : 'Follow'}
-              </Button>
-            ) : (
-              <IconButton size="small" onClick={handleDelete} sx={{ color: '#ef4444' }}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+                {post.username?.[0]?.toUpperCase()}
+              </div>
             )}
-            <IconButton size="small" sx={{ color: '#9096a8' }}>
-              <MoreIcon />
-            </IconButton>
-          </Stack>
-        </Stack>
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "var(--text-primary)" }}>{post.username}</div>
+              <div className="text-secondary small">{timeAgo(post.createdAt)}</div>
+            </div>
+          </div>
 
-        {/* Post Content */}
-        <Typography variant="body2" sx={{ color: '#eef0f4', mb: 2, lineHeight: 1.6 }}>
-          {displayContent}
-        </Typography>
+          {isOwner && (
+            <Dropdown align="end">
+              <Dropdown.Toggle
+                as="span"
+                bsPrefix="no-caret"
+                style={{ cursor: "pointer", color: "var(--text-secondary)", padding: "0 6px" }}
+              >
+                ⋯
+              </Dropdown.Toggle>
+              <Dropdown.Menu variant="dark">
+                <Dropdown.Item onClick={handleDelete} className="text-danger">
+                  Delete post
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
+        </div>
 
-        {/* Post Image */}
-        {displayImage && (
-          <Box
-            component="img"
-            src={displayImage}
-            alt="Post media"
-            sx={{
-              width: '100%',
-              maxHeight: 340,
-              objectFit: 'cover',
-              borderRadius: 3,
-              mt: 1,
-              mb: 2,
-              border: '1px solid #262936',
-            }}
+        {post.text && <p className="mt-3 mb-2" style={{ whiteSpace: "pre-wrap", color: "var(--text-primary)" }}>{post.text}</p>}
+
+        {post.imageUrl && (
+          <Image
+            src={post.imageUrl}
+            fluid
+            rounded
+            className="mt-1"
+            style={{ maxHeight: 420, width: "100%", objectFit: "cover" }}
           />
         )}
 
-        {/* Action Footer Bar */}
-        <Stack direction="row" spacing={4} sx={{ alignItems: 'center', pt: 1 }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', cursor: 'pointer' }} onClick={handleLike}>
-            <IconButton size="small" sx={{ p: 0, color: liked ? '#ef4444' : '#9096a8' }}>
-              {liked ? <HeartFilledIcon fontSize="small" /> : <HeartOutlineIcon fontSize="small" />}
-            </IconButton>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: liked ? '#ef4444' : '#9096a8' }}>
-              {likesCount}
-            </Typography>
-          </Stack>
+        <div className="d-flex align-items-center gap-2 mt-3">
+          <button className={`like-btn ${isLiked ? "liked" : ""}`} onClick={handleLike}>
+            {isLiked ? "♥" : "♡"} {likes.length}
+          </button>
+          <button className="like-btn" onClick={() => setShowComments((s) => !s)}>
+            💬 {comments.length}
+          </button>
+        </div>
 
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowComments(!showComments)}>
-            <IconButton size="small" sx={{ p: 0, color: '#9096a8' }}>
-              <CommentIcon fontSize="small" />
-            </IconButton>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#9096a8' }}>
-              {comments.length || fallbackCommentsCount}
-            </Typography>
-          </Stack>
-
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', cursor: 'pointer' }}>
-            <IconButton size="small" sx={{ p: 0, color: '#9096a8' }}>
-              <ShareIcon fontSize="small" />
-            </IconButton>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#9096a8' }}>
-              0
-            </Typography>
-          </Stack>
-        </Stack>
-
-        {/* Comments Section Drawer */}
-        <Collapse in={showComments} timeout="auto" unmountOnExit>
-          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #262936' }}>
-            {/* Input comment field */}
-            <Box component="form" onSubmit={handleAddComment} sx={{ mb: 2 }}>
-              <TextField
-                placeholder="Write a comment..."
-                size="small"
-                fullWidth
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                slotProps={{
-                  input: {
-                    style: { color: '#eef0f4', fontSize: '0.85rem' },
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton size="small" type="submit" disabled={submittingComment || !newComment.trim()} sx={{ color: '#f2b705' }}>
-                          <SendIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#0f1117',
-                    borderRadius: 20,
-                    '& fieldset': { borderColor: '#262936' },
-                  },
-                }}
-              />
-            </Box>
-
-            {/* Comments list */}
-            <Stack spacing={1.5}>
-              {comments.map((comment, index) => (
-                <Box key={index} sx={{ backgroundColor: '#0f1117', p: 1.5, borderRadius: 2, border: '1px solid #262936' }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#f2b705', mr: 1 }}>
-                    {comment.user?.username || comment.username || 'User'}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#eef0f4' }}>
-                    {comment.text}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          </Box>
-        </Collapse>
-      </CardContent>
+        {showComments && (
+          <CommentSection postId={post._id} comments={comments} onCommentAdded={setComments} />
+        )}
+      </Card.Body>
     </Card>
   );
 }
-
-export default PostCard;

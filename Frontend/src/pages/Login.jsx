@@ -1,152 +1,77 @@
-import React, { useState } from 'react';
-import { Box, Card, CardContent, Typography, TextField, Button, Alert, Stack, CircularProgress, Link as MuiLink } from '@mui/material';
-import { LockOutlined as LockIcon, EmailOutlined as EmailIcon, ArrowBack as BackIcon } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
+import Paper from "@mui/material/Paper";
+import { useAuth } from "../context/AuthContext";
 
-function Login({ onNavigate }) {
+export default function Login() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      setErrorMsg('Please enter both email and password.');
-      return;
-    }
-
-    setSubmitting(true);
-    setErrorMsg('');
-
-    const res = await login(email, password);
-    setSubmitting(false);
-
-    if (res.success) {
-      if (onNavigate) onNavigate('feed');
-    } else {
-      setErrorMsg(res.error || 'Login failed. Please check your credentials.');
+    setError("");
+    try {
+      setSubmitting(true);
+      await login(form.email, form.password);
+      navigate(location.state?.from?.pathname || "/", { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't log you in. Check your details and try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <Box sx={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
-      <Card sx={{ width: '100%', maxWidth: 420, backgroundColor: '#171922', border: '1px solid #262936', borderRadius: 4, p: 1 }}>
-        <CardContent sx={{ p: 3 }}>
-          {/* Header */}
-          <Stack direction="row" alignItems="center" spacing={1} mb={3}>
-            <Button
-              size="small"
-              onClick={() => onNavigate && onNavigate('feed')}
-              startIcon={<BackIcon />}
-              sx={{ color: '#9096a8', minWidth: 'auto', p: 0.5 }}
-            >
-              Feed
-            </Button>
-          </Stack>
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="90vh" px={2}>
+      <Paper className="card-surface" sx={{ p: 4, width: "100%", maxWidth: 380, bgcolor: "transparent" }}>
+        <Typography variant="h5" mb={0.5} sx={{ color: "var(--accent)" }}>
+          Welcome back
+        </Typography>
+        <Typography variant="body2" className="text-secondary" mb={3}>
+          Log in to see what people are sharing.
+        </Typography>
 
-          <Box textAlign="center" mb={4}>
-            <Typography variant="h5" fontWeight="800" color="#eef0f4" gutterBottom>
-              Welcome Back
-            </Typography>
-            <Typography variant="body2" color="#9096a8">
-              Sign in to post, like, and interact on Mini Social
-            </Typography>
-          </Box>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          {errorMsg && (
-            <Alert severity="error" sx={{ mb: 3, backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-              {errorMsg}
-            </Alert>
-          )}
+        <Box component="form" onSubmit={handleSubmit} display="flex" flexDirection="column" gap={2}>
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={handleChange}
+            required
+            fullWidth
+          />
+          <TextField
+            label="Password"
+            name="password"
+            type="password"
+            value={form.password}
+            onChange={handleChange}
+            required
+            fullWidth
+          />
+          <Button type="submit" variant="contained" color="primary" size="large" disabled={submitting}>
+            {submitting ? "Logging in…" : "Log in"}
+          </Button>
+        </Box>
 
-          {/* Form */}
-          <Box component="form" onSubmit={handleSubmit}>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Email Address"
-                type="email"
-                required
-                fullWidth
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                slotProps={{
-                  input: {
-                    startAdornment: <EmailIcon sx={{ color: '#9096a8', mr: 1, fontSize: 20 }} />,
-                    style: { color: '#eef0f4' },
-                  },
-                }}
-                sx={{
-                  '& .MuiInputLabel-root': { color: '#9096a8' },
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#0f1117',
-                    '& fieldset': { borderColor: '#262936' },
-                    '&:hover fieldset': { borderColor: '#f2b705' },
-                  },
-                }}
-              />
-
-              <TextField
-                label="Password"
-                type="password"
-                required
-                fullWidth
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                slotProps={{
-                  input: {
-                    startAdornment: <LockIcon sx={{ color: '#9096a8', mr: 1, fontSize: 20 }} />,
-                    style: { color: '#eef0f4' },
-                  },
-                }}
-                sx={{
-                  '& .MuiInputLabel-root': { color: '#9096a8' },
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#0f1117',
-                    '& fieldset': { borderColor: '#262936' },
-                    '&:hover fieldset': { borderColor: '#f2b705' },
-                  },
-                }}
-              />
-
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={submitting}
-                sx={{
-                  py: 1.2,
-                  mt: 1,
-                  backgroundColor: '#f2b705',
-                  color: '#0f1117',
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  '&:hover': { backgroundColor: '#d97706' },
-                }}
-              >
-                {submitting ? <CircularProgress size={24} sx={{ color: '#0f1117' }} /> : 'Sign In'}
-              </Button>
-            </Stack>
-          </Box>
-
-          <Box textAlign="center" mt={3}>
-            <Typography variant="body2" color="#9096a8">
-              Don't have an account?{' '}
-              <MuiLink
-                component="button"
-                variant="body2"
-                onClick={() => onNavigate && onNavigate('register')}
-                underline="hover"
-                sx={{ color: '#f2b705', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Register here
-              </MuiLink>
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
+        <Typography variant="body2" className="text-secondary" mt={3} textAlign="center">
+          New here? <Link to="/register">Create an account</Link>
+        </Typography>
+      </Paper>
     </Box>
   );
 }
-
-export default Login;

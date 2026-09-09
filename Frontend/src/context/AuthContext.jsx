@@ -1,94 +1,76 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import api from "../api/axios";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState(null);
+  const [loading, setLoading] = useState(true); // true while we check for an existing session
 
+  function normalizeUser(userData) {
+    if (!userData) return null;
+    const id = userData.id || userData._id;
+    return { ...userData, id, _id: id };
+  }
+
+  // On first load, if a token is stored, fetch the profile to hydrate `user`
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      localStorage.setItem('token', token);
-      fetchUserProfile();
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
-      localStorage.removeItem('token');
-      setUser(null);
+    const token = localStorage.getItem("token");
+    if (!token) {
       setLoading(false);
+      return;
     }
-  }, [token]);
+    api
+      .get("/auth/profile")
+      .then((res) => setUser(normalizeUser(res.data.user ?? res.data)))
+      .catch(() => localStorage.removeItem("token"))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('/api/auth/profile');
-      setUser(response.data);
-      setAuthError(null);
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-      if (err.response && err.response.status === 401) {
-        logout();
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const login = useCallback(async (email, password) => {
+    const res = await api.post("/auth/login", { email, password });
+    localStorage.setItem("token", res.data.token);
+    const normUser = normalizeUser(res.data.user);
+    setUser(normUser);
+    return normUser;
+  }, []);
 
-  const login = async (email, password) => {
-    try {
-      setAuthError(null);
-      const response = await axios.post('/api/auth/login', { email, password });
-      const { token: authToken, user: userData } = response.data;
-      
-      setToken(authToken);
-      setUser(userData);
-      return { success: true };
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';
-      setAuthError(errorMessage);
-      return { success: false, error: errorMessage };
-    }
-  };
+  // payload can be a plain object (JSON) or a FormData instance (avatar upload)
+  const register = useCallback(async (payload) => {
+    const isFormData = payload instanceof FormData;
+    const res = await api.post("/auth/register", payload, {
+      headers: isFormData ? { "Content-Type": "multipart/form-data" } : undefined,
+    });
+    localStorage.setItem("token", res.data.token);
+    const normUser = normalizeUser(res.data.user);
+    setUser(normUser);
+    return normUser;
+  }, []);
 
-  const register = async (formData) => {
-    try {
-      setAuthError(null);
-      const response = await axios.post('/api/auth/register', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const { token: authToken, user: userData } = response.data;
-      
-      setToken(authToken);
-      setUser(userData);
-      return { success: true };
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Registration failed.';
-      setAuthError(errorMessage);
-      return { success: false, error: errorMessage };
-    }
-  };
+  const updateProfile = useCallback(async (payload) => {
+    const isFormData = payload instanceof FormData;
+    const res = await api.put("/auth/profile", payload, {
+      headers: isFormData ? { "Content-Type": "multipart/form-data" } : undefined,
+    });
+    const updatedUser = normalizeUser(res.data.user ?? res.data);
+    setUser(updatedUser);
+    return updatedUser;
+  }, []);
 
-  const logout = () => {
-    setToken('');
+  const logout = useCallback(() => {
+    localStorage.removeItem("token");
     setUser(null);
-    localStorage.removeItem('token');
-  };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, authError, login, register, logout, fetchUserProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
+  return ctx;
+}

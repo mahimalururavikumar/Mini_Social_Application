@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Post from "../models/Post.js";
 import generateToken from "../utils/generateToken.js";
 import bcrypt from "bcryptjs";
 import { uploadToCloudinary, deleteFromCloudinary } from "../config/cloudinary.js";
@@ -47,6 +48,7 @@ export const registerUser = async (req, res) => {
       token: token,
       user: {
         id: newUser._id,
+        _id: newUser._id,
         username: newUser.username,
         email: newUser.email,
         avatarUrl: newUser.avatarUrl,
@@ -80,6 +82,7 @@ export const loginUser = async (req, res) => {
       token: token,
       user: {
         id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
         avatarUrl: user.avatarUrl,
@@ -96,7 +99,13 @@ export const getUserProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    return res.status(200).json(user);
+    return res.status(200).json({
+      id: user._id,
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+    });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -111,8 +120,23 @@ export const updateUserProfile = async (req, res) => {
     }
 
     const { username, email, password } = req.body;
+    const oldUsername = user.username;
 
-    if (username) user.username = username;
+    if (username && username !== oldUsername) {
+      user.username = username;
+      // Synchronize username on existing posts, comments, and likes
+      await Post.updateMany({ user: user._id }, { username: username });
+      await Post.updateMany(
+        { "comments.user": user._id },
+        { $set: { "comments.$[elem].username": username } },
+        { arrayFilters: [{ "elem.user": user._id }] }
+      );
+      await Post.updateMany(
+        { "likes.user": user._id },
+        { $set: { "likes.$[elem].username": username } },
+        { arrayFilters: [{ "elem.user": user._id }] }
+      );
+    }
     if (email) user.email = email;
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -137,6 +161,7 @@ export const updateUserProfile = async (req, res) => {
       message: "Profile updated successfully",
       user: {
         id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
         avatarUrl: user.avatarUrl,
@@ -146,3 +171,4 @@ export const updateUserProfile = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+

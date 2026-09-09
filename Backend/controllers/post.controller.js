@@ -29,6 +29,7 @@ export const createPost = async (req, res) => {
         });
 
         await newPost.save();
+        await newPost.populate("user", "username avatarUrl");
         return res.status(201).json(newPost);
     } catch (error) {
         console.error("Error creating post:", error);
@@ -49,7 +50,10 @@ export const getFeed = async (req, res) => {
             .populate("comments.user", "username avatarUrl")
             .limit(limit);
 
-        return res.status(200).json(posts);
+        const nextCursor = posts.length > 0 ? posts[posts.length - 1].createdAt : null;
+        const hasMore = posts.length === limit;
+
+        return res.status(200).json({ posts, nextCursor, hasMore });
     } catch (error) {
         console.error("Error fetching feed:", error);
         return res.status(500).json({ message: "Error fetching feed", error: error.message });
@@ -94,6 +98,9 @@ export const toggleLike = async (req, res) => {
         }
 
         await post.save();
+        await post.populate("user", "username avatarUrl");
+        await post.populate("comments.user", "username avatarUrl");
+
         return res.status(200).json({
             message: likeIndex === -1 ? "Post liked" : "Post unliked",
             likesCount: post.likes.length,
@@ -126,6 +133,8 @@ export const addComment = async (req, res) => {
 
         post.comments.push(newComment);
         await post.save();
+        await post.populate("comments.user", "username avatarUrl");
+
         return res.status(201).json({
             message: "Comment added successfully",
             commentsCount: post.comments.length,
@@ -159,4 +168,5 @@ export const deletePost = async (req, res) => {
         console.error("Error deleting post:", error);
         return res.status(500).json({ message: "Error deleting post", error: error.message });
     }
-};
+};
+
