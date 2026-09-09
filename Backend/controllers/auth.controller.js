@@ -11,9 +11,12 @@ export const registerUser = async (req, res) => {
   }
 
   try {
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      if (existingUser.email.toLowerCase() === email.toLowerCase()) {
+        return res.status(400).json({ message: "Email is already registered" });
+      }
+      return res.status(400).json({ message: "Username is already taken" });
     }
 
     let avatarUrl = "";

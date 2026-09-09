@@ -1,23 +1,26 @@
 import { Router } from "express";
-import { createPost, getAllPosts, getPostById, updatePost, deletePost } from "../controllers/post.controller.js";
+import { createPost, getFeed, getPostById, toggleLike, addComment, deletePost } from "../controllers/post.controller.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 
 const router = Router();
 
+// Public Feed - Get all posts
+router.get("/", getFeed);
+
 // Create a new post
 router.post("/", authMiddleware, upload.single("image"), createPost);
 
-// Get all posts
-router.get("/", authMiddleware, getAllPosts);
-
 // Get a specific post by ID
-router.get("/:id", authMiddleware, getPostById);
+router.get("/:id", getPostById);
 
-// Update a specific post by ID
-router.put("/:id", authMiddleware, upload.single("image"), updatePost);
+// Like / Unlike a post
+router.post("/:id/like", authMiddleware, toggleLike);
+
+// Comment on a post
+router.post("/:id/comment", authMiddleware, addComment);
 
 // Delete a specific post by ID
 router.delete("/:id", authMiddleware, deletePost);
 
-export default router;
+export default router;

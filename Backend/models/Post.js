@@ -1,5 +1,40 @@
 import mongoose from "mongoose";
 
+const likeSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    username: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false, timestamps: true }
+);
+
+const commentSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    username: {
+      type: String,
+      required: true,
+    },
+    text: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+  },
+  { timestamps: true, _id: true }
+);
 
 const postSchema = new mongoose.Schema(
   {
@@ -23,8 +58,12 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    imagePublicId: {
+      type: String,
+      default: "",
+    },
     likes: {
-      type: [String],
+      type: [likeSchema],
       default: [],
     },
     comments: {
@@ -35,45 +74,25 @@ const postSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const commentSchema = new mongoose.Schema(
-  {
-    user: 
-    { type: mongoose.Schema.Types.ObjectId,
-         ref: "User", required: true 
-    },
-    username: 
-    { 
-        type: String, 
-        required: true 
-    },
-    text: 
-    {
-         type: String, 
-         required: true, 
-         trim: true, 
-         maxlength: 500 
-    },
-  },
-  { timestamps: true, _id: true }
-);
-
-postSchema.pre("validate", function (next) {
+postSchema.pre("validate", function () {
   if (!this.text && !this.imageUrl) {
-    return next(new Error("A post must contain text, an image, or both."));
+    throw new Error("A post must contain text, an image, or both.");
   }
-  next();
 });
 
 postSchema.virtual("likesCount").get(function () {
-  return this.likes.length;
+  return this.likes ? this.likes.length : 0;
 });
+
 postSchema.virtual("commentsCount").get(function () {
-  return this.comments.length;
+  return this.comments ? this.comments.length : 0;
 });
+
 postSchema.set("toJSON", { virtuals: true });
+postSchema.set("toObject", { virtuals: true });
 
 postSchema.index({ createdAt: -1, _id: -1 });
 
 const Post = mongoose.model("Post", postSchema);
 
-export default Post;
+export default Post;
