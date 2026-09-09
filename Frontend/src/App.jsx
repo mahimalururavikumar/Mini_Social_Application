@@ -1,67 +1,142 @@
-import React from 'react';
-import { ThemeProvider, createTheme, CssBaseline, Container, Box, Typography, Card, CardContent, Button, Stack, Chip } from '@mui/material';
-import { AutoAwesome as AutoAwesomeIcon, RocketLaunch as RocketIcon, Layers as LayersIcon } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { ThemeProvider, CssBaseline, Container, Box, Fab } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
+import theme from './theme/theme';
+import { AuthProvider } from './context/AuthContext';
+import Navbar from './components/Navbar';
+import CreatePostCard from './components/CreatePostCard';
+import FilterTabs from './components/FilterTabs';
+import PostCard from './components/PostCard';
+import BottomNav from './components/BottomNav';
 
-// Create a custom MUI Dark/Purple Theme
-const theme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#818cf8',
-    },
-    secondary: {
-      main: '#ec4899',
-    },
-    background: {
-      default: '#0f172a',
-      paper: '#1e293b',
-    },
+// Sample feed posts matching TaskPlanet UI reference
+const INITIAL_POSTS = [
+  {
+    id: 1,
+    author: 'Nitin Pa...',
+    username: '@nitin3w',
+    userBadge: '7 👑 Legend',
+    avatar: 'https://i.pravatar.cc/150?img=33',
+    time: 'Aug 30',
+    categoryTag: 'TaskPlanet X CPA Lead',
+    title: 'Earn Up to 10,000 Points with CPA Lead!',
+    content: "Try CPA Lead offers, surveys and tasks to earn points. If an eligible verified task isn't credited, compensation may be given after verification. Please, Keep screenshots as proof.",
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    isPinned: true,
+    likesCount: 200,
+    commentsCount: 105,
+    sharesCount: 14,
   },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+  {
+    id: 2,
+    author: 'Hira Kals...',
+    username: '@hashiimov8',
+    userBadge: '1 🥉 Bronze',
+    avatar: 'https://i.pravatar.cc/150?img=47',
+    time: '8 minutes ago',
+    categoryTag: '',
+    title: 'Scratch Card Winner Announcement 🥳',
+    content: 'Just completed the registration task ID SM3071 and earned 100 points! Check out the details below.',
+    image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80',
+    isPinned: false,
+    likesCount: 2,
+    commentsCount: 1,
+    sharesCount: 0,
   },
-  shape: {
-    borderRadius: 12,
+  {
+    id: 3,
+    author: 'Sajjad Muc...',
+    username: '@sajjad_gold',
+    userBadge: '3 🥇 Gold',
+    avatar: 'https://i.pravatar.cc/150?img=11',
+    time: '2 hours ago',
+    categoryTag: 'Refer And Earn',
+    title: 'Daily Task Completion Tip 💡',
+    content: 'Always keep your proof screenshots clear before submitting tasks to speed up point validation.',
+    image: '',
+    isPinned: false,
+    likesCount: 45,
+    commentsCount: 12,
+    sharesCount: 5,
   },
-});
+];
+
+function AppContent() {
+  const [posts, setPosts] = useState(INITIAL_POSTS);
+  const [activeFilter, setActiveFilter] = useState('All Post');
+
+  const handleAddPost = (newContent) => {
+    const newPostObj = {
+      id: Date.now(),
+      author: 'You (Logged User)',
+      username: '@my_profile',
+      userBadge: '1 🥉 Member',
+      avatar: 'https://i.pravatar.cc/150?img=12',
+      time: 'Just now',
+      categoryTag: 'Community Post',
+      title: 'New Social Post',
+      content: newContent,
+      image: '',
+      isPinned: false,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+    };
+    setPosts([newPostObj, ...posts]);
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#0f1117', pb: 10 }}>
+      <Container maxWidth="sm" sx={{ pt: 1, px: 2 }}>
+        {/* Top Header Navigation */}
+        <Navbar />
+
+        {/* Create Post Input Card */}
+        <CreatePostCard onAddPost={handleAddPost} />
+
+        {/* Filter Navigation Tabs */}
+        <FilterTabs activeFilter={activeFilter} onSelectFilter={setActiveFilter} />
+
+        {/* Feed Posts */}
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </Container>
+
+      {/* Floating Action Button (+) with Warm Gold Accent */}
+      <Fab
+        aria-label="add post"
+        sx={{
+          position: 'fixed',
+          bottom: 76,
+          right: 20,
+          backgroundColor: '#0f1117',
+          border: '2px solid #f2b705',
+          color: '#f2b705',
+          boxShadow: '0 0 15px rgba(242, 183, 5, 0.4)',
+          '&:hover': {
+            backgroundColor: '#f2b705',
+            color: '#0f1117',
+          },
+        }}
+      >
+        <AddIcon />
+      </Fab>
+
+      {/* Bottom TaskPlanet Navigation Bar */}
+      <BottomNav />
+    </Box>
+  );
+}
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Container maxWidth="md" sx={{ pt: 8, pb: 4 }}>
-        <Box textAlign="center" mb={6}>
-          <Stack direction="row" justifyContent="center" alignItems="center" spacing={1} mb={2}>
-            <Chip icon={<AutoAwesomeIcon />} label="Phase 1 Ready" color="primary" variant="outlined" />
-          </Stack>
-          <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom sx={{ background: 'linear-gradient(45deg, #818cf8 30%, #ec4899 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Mini Social Post Application
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Frontend initialized with React.js & Material UI (MUI)
-          </Typography>
-        </Box>
-
-        <Card sx={{ border: '1px solid rgba(255, 255, 255, 0.1)', boxShadow: 6, p: 2 }}>
-          <CardContent>
-            <Typography variant="h5" fontWeight="600" gutterBottom>
-              🚀 Step 1 Initialization Complete!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              We have successfully bootstrapped the React application with Vite, set up Material UI theme configuration, and configured backend API routing proxy.
-            </Typography>
-            <Stack direction="row" spacing={2} mt={3}>
-              <Button variant="contained" color="primary" startIcon={<RocketIcon />}>
-                Ready for Step 2
-              </Button>
-              <Button variant="outlined" color="secondary" startIcon={<LayersIcon />}>
-                MUI Components Active
-              </Button>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Container>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AppContent />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

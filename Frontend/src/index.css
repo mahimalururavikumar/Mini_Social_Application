@@ -1,11 +1,12 @@
-/* Global CSS Reset & Base Styles */
+/* Global CSS Reset & Theme Colors */
 :root {
-  --primary-color: #6366f1;
-  --primary-hover: #4f46e5;
-  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-  --card-bg: #1e293b;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --bg-main: #0f1117;
+  --bg-card: #171922;
+  --border-hairline: #262936;
+  --text-primary: #eef0f4;
+  --text-secondary: #9096a8;
+  --accent-gold: #f2b705;
+  --like-filled: #ef4444;
 }
 
 * {
@@ -16,8 +17,8 @@
 
 body {
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #0f172a;
-  color: var(--text-main);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
@@ -26,6 +27,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--bg-main);
 }
 
 a {
@@ -35,15 +37,15 @@ a {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #0f1117;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #262936;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #9096a8;
 }

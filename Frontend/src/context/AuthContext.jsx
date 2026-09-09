@@ -1,18 +1,14 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
-// 1. Create the Auth Context object
 const AuthContext = createContext();
 
-// 2. AuthProvider Component that wraps our application
 export const AuthProvider = ({ children }) => {
-  // State for user data, token, and loading state
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
 
-  // Set default authorization header for axios whenever token changes
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -26,7 +22,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Fetch logged-in user profile
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
@@ -35,7 +30,6 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
     } catch (err) {
       console.error('Error fetching profile:', err);
-      // If token expired or invalid, clear token
       if (err.response && err.response.status === 401) {
         logout();
       }
@@ -44,7 +38,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login handler function
   const login = async (email, password) => {
     try {
       setAuthError(null);
@@ -61,7 +54,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Register handler function (supports file upload for avatar)
   const register = async (formData) => {
     try {
       setAuthError(null);
@@ -80,7 +72,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout handler function
   const logout = () => {
     setToken('');
     setUser(null);
@@ -94,7 +85,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// 3. Custom Hook to easily consume AuthContext in any component
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

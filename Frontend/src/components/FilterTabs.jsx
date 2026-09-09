@@ -13,18 +13,18 @@ function FilterTabs({ activeFilter, onSelectFilter }) {
             key={filter}
             label={filter}
             onClick={() => onSelectFilter(filter)}
-            variant={isActive ? 'contained' : 'outlined'}
+            variant={isActive ? 'filled' : 'outlined'}
             sx={{
               px: 1,
               py: 2,
               borderRadius: 20,
               fontSize: '0.85rem',
               fontWeight: 600,
-              backgroundColor: isActive ? '#2563eb' : '#121824',
-              color: isActive ? '#ffffff' : '#94a3b8',
-              borderColor: isActive ? '#2563eb' : 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: isActive ? '#f2b705' : '#171922',
+              color: isActive ? '#0f1117' : '#9096a8',
+              borderColor: isActive ? '#f2b705' : '#262936',
               '&:hover': {
-                backgroundColor: isActive ? '#1d4ed8' : 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: isActive ? '#d97706' : 'rgba(255, 255, 255, 0.05)',
               },
             }}
           />

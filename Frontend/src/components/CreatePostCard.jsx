@@ -16,11 +16,11 @@ function CreatePostCard({ onAddPost }) {
   };
 
   return (
-    <Card sx={{ mb: 3, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+    <Card sx={{ mb: 3, backgroundColor: '#171922', border: '1px solid #262936' }}>
       <CardContent sx={{ p: 2.5 }}>
-        {/* Card Header with Category Pills */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" fontWeight="700">
+        {/* Card Header */}
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#eef0f4' }}>
             Create Post
           </Typography>
           <Stack direction="row" spacing={1}>
@@ -28,7 +28,17 @@ function CreatePostCard({ onAddPost }) {
               size="small"
               variant={activeTab === 'all' ? 'contained' : 'outlined'}
               onClick={() => setActiveTab('all')}
-              sx={{ py: 0.3, px: 2, fontSize: '0.8rem' }}
+              sx={{
+                py: 0.3,
+                px: 2,
+                fontSize: '0.8rem',
+                backgroundColor: activeTab === 'all' ? '#f2b705' : 'transparent',
+                color: activeTab === 'all' ? '#0f1117' : '#9096a8',
+                borderColor: activeTab === 'all' ? '#f2b705' : '#262936',
+                '&:hover': {
+                  backgroundColor: activeTab === 'all' ? '#d97706' : 'rgba(242, 183, 5, 0.1)',
+                },
+              }}
             >
               All Posts
             </Button>
@@ -36,7 +46,14 @@ function CreatePostCard({ onAddPost }) {
               size="small"
               variant={activeTab === 'promotions' ? 'contained' : 'outlined'}
               onClick={() => setActiveTab('promotions')}
-              sx={{ py: 0.3, px: 2, fontSize: '0.8rem', color: '#94a3b8', borderColor: 'rgba(255, 255, 255, 0.1)' }}
+              sx={{
+                py: 0.3,
+                px: 2,
+                fontSize: '0.8rem',
+                backgroundColor: activeTab === 'promotions' ? '#f2b705' : 'transparent',
+                color: activeTab === 'promotions' ? '#0f1117' : '#9096a8',
+                borderColor: activeTab === 'promotions' ? '#f2b705' : '#262936',
+              }}
             >
               Promotions
             </Button>
@@ -52,44 +69,53 @@ function CreatePostCard({ onAddPost }) {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           variant="standard"
-          InputProps={{
-            disableUnderline: true,
-            style: { color: '#f8fafc', fontSize: '0.95rem' },
+          slotProps={{
+            input: {
+              disableUnderline: true,
+              style: { color: '#eef0f4', fontSize: '0.95rem' },
+            },
           }}
           sx={{ mb: 2 }}
         />
 
-        <Box sx={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.08)', mb: 2 }} />
+        <Box sx={{ height: '1px', backgroundColor: '#262936', mb: 2 }} />
 
         {/* Bottom Actions Bar */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <IconButton size="small" color="primary">
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+            <IconButton size="small" sx={{ color: '#f2b705' }}>
               <PhotoCameraIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" color="primary">
+            <IconButton size="small" sx={{ color: '#f2b705' }}>
               <EmojiIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" color="primary">
+            <IconButton size="small" sx={{ color: '#f2b705' }}>
               <ListIcon fontSize="small" />
             </IconButton>
             <Chip
-              icon={<PromoteIcon fontSize="small" style={{ color: '#60a5fa' }} />}
+              icon={<PromoteIcon fontSize="small" style={{ color: '#f2b705' }} />}
               label="Promote"
               variant="outlined"
               size="small"
               clickable
-              sx={{ ml: 1, borderColor: '#2563eb', color: '#60a5fa' }}
+              sx={{ ml: 1, borderColor: '#262936', color: '#9096a8' }}
             />
           </Stack>
 
           <Button
-            variant="outlined"
-            color="primary"
-            endIcon={<SendIcon fontSize="small" />}
+            variant="contained"
             onClick={handleSubmit}
             disabled={!content.trim()}
-            sx={{ px: 3, borderRadius: 24, fontWeight: '700' }}
+            endIcon={<SendIcon fontSize="small" />}
+            sx={{
+              px: 3,
+              borderRadius: 24,
+              fontWeight: 700,
+              backgroundColor: '#f2b705',
+              color: '#0f1117',
+              '&:hover': { backgroundColor: '#d97706' },
+              '&.Mui-disabled': { backgroundColor: '#262936', color: '#9096a8' },
+            }}
           >
             Post
           </Button>
